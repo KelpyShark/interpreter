@@ -1,0 +1,9 @@
+[package]
+name = "kelpyshark-interpreter"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+kelpyshark-compiler = { path = "../compiler" }
+
+[dev-dependencies]
