@@ -26,6 +26,16 @@ pub enum Value {
         arity: usize,
         func: fn(Vec<Value>) -> Result<Value, String>,
     },
+    /// Class definition (methods map).
+    Class {
+        name: String,
+        methods: HashMap<String, Value>,
+    },
+    /// Class instance.
+    Instance {
+        class_name: String,
+        fields: HashMap<String, Value>,
+    },
     Null,
 }
 
@@ -77,6 +87,19 @@ impl fmt::Display for Value {
             Value::NativeFunction { name, .. } => {
                 write!(f, "<native function {}>", name)
             }
+            Value::Class { name, .. } => write!(f, "<class {}>", name),
+            Value::Instance { class_name, fields } => {
+                write!(f, "<{} instance>", class_name)?;
+                if !fields.is_empty() {
+                    write!(f, " {{")?;
+                    for (i, (k, v)) in fields.iter().enumerate() {
+                        if i > 0 { write!(f, ", ")?; }
+                        write!(f, "{}: {}", k, v)?;
+                    }
+                    write!(f, "}}")?;
+                }
+                Ok(())
+            }
         }
     }
 }
@@ -88,6 +111,7 @@ impl PartialEq for Value {
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Boolean(a), Value::Boolean(b)) => a == b,
             (Value::Null, Value::Null) => true,
+            (Value::List(a), Value::List(b)) => a == b,
             _ => false,
         }
     }
@@ -104,6 +128,7 @@ impl Value {
             Value::List(items) => !items.is_empty(),
             Value::Dict(map) => !map.is_empty(),
             Value::Function { .. } | Value::NativeFunction { .. } => true,
+            Value::Class { .. } | Value::Instance { .. } => true,
         }
     }
 
@@ -118,6 +143,8 @@ impl Value {
             Value::Dict(_) => "dict",
             Value::Function { .. } => "function",
             Value::NativeFunction { .. } => "native_function",
+            Value::Class { .. } => "class",
+            Value::Instance { class_name, .. } => class_name,
         }
     }
 }
