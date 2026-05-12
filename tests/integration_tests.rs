@@ -474,3 +474,208 @@ fn test_comments_ignored() {
     "#);
     assert_eq!(output, vec!["visible", "also visible"]);
 }
+
+// ══════════════════════════════════════════════════════════════
+// Java code generation
+// ══════════════════════════════════════════════════════════════
+
+#[test]
+fn test_java_codegen_produces_valid_java() {
+    let source = r#"
+        x = 42
+        print x
+        def add(a, b) {
+            return a + b
+        }
+        result = add(1, 2)
+        print result
+    "#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let java = kelpyshark_compiler::codegen::java::generate(&program);
+
+    assert!(java.contains("public class Program"));
+    assert!(java.contains("public static void main(String[] args)"));
+    assert!(java.contains("import java.util.*"));
+    assert!(java.contains("ksPrint("));
+    assert!(java.contains("static Object ks_add("));
+}
+
+#[test]
+fn test_java_codegen_hello_world() {
+    let source = r#"print "Hello, World!""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let java = kelpyshark_compiler::codegen::java::generate(&program);
+
+    assert!(java.contains("ksPrint(\"Hello, World!\")"));
+}
+
+#[test]
+fn test_java_codegen_if_while() {
+    let source = r#"
+        x = 0
+        while x < 5 {
+            if x == 3 {
+                print "three"
+            }
+            x = x + 1
+        }
+    "#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let java = kelpyshark_compiler::codegen::java::generate(&program);
+
+    assert!(java.contains("while (ksTruthy(ksLt("));
+    assert!(java.contains("if (ksTruthy(ksEq("));
+}
+
+#[test]
+fn test_java_codegen_list_dict() {
+    let source = r#"
+        items = ["a", "b", "c"]
+        person = {"name": "Bob"}
+    "#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let java = kelpyshark_compiler::codegen::java::generate(&program);
+
+    assert!(java.contains("new ArrayList<>(Arrays.asList("));
+    assert!(java.contains("LinkedHashMap"));
+}
+
+#[test]
+fn test_java_codegen_for_loop() {
+    let source = r#"
+        items = [1, 2, 3]
+        for item in items {
+            print item
+        }
+    "#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let java = kelpyshark_compiler::codegen::java::generate(&program);
+
+    assert!(java.contains("for (Object item : (Iterable<?>)items)"));
+}
+
+// ══════════════════════════════════════════════════════════════
+// C# code generation
+// ══════════════════════════════════════════════════════════════
+
+#[test]
+fn test_cs_codegen_produces_valid_cs() {
+    let source = r#"
+        x = 42
+        print x
+        def add(a, b) {
+            return a + b
+        }
+        result = add(1, 2)
+        print result
+    "#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let cs = kelpyshark_compiler::codegen::cs::generate(&program);
+
+    assert!(cs.contains("class Program {"));
+    assert!(cs.contains("static void Main(string[] args)"));
+    assert!(cs.contains("using System;"));
+    assert!(cs.contains("KsPrint("));
+    assert!(cs.contains("static object Ks_add("));
+}
+
+#[test]
+fn test_cs_codegen_hello_world() {
+    let source = r#"print "Hello, World!""#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let cs = kelpyshark_compiler::codegen::cs::generate(&program);
+
+    assert!(cs.contains("KsPrint(\"Hello, World!\")"));
+}
+
+#[test]
+fn test_cs_codegen_if_while() {
+    let source = r#"
+        x = 0
+        while x < 5 {
+            if x == 3 {
+                print "three"
+            }
+            x = x + 1
+        }
+    "#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let cs = kelpyshark_compiler::codegen::cs::generate(&program);
+
+    assert!(cs.contains("while (KsTruthy(KsLt("));
+    assert!(cs.contains("if (KsTruthy(KsEq("));
+}
+
+#[test]
+fn test_cs_codegen_list_dict() {
+    let source = r#"
+        items = ["a", "b", "c"]
+        person = {"name": "Bob"}
+    "#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let cs = kelpyshark_compiler::codegen::cs::generate(&program);
+
+    assert!(cs.contains("new List<object>"));
+    assert!(cs.contains("new Dictionary<object,object>"));
+}
+
+#[test]
+fn test_cs_codegen_try_catch() {
+    let source = r#"
+        try {
+            throw "oops"
+        } catch (err) {
+            print err
+        }
+    "#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let cs = kelpyshark_compiler::codegen::cs::generate(&program);
+
+    assert!(cs.contains("try {"));
+    assert!(cs.contains("} catch (Exception _ex_err) {"));
+}
+
+#[test]
+fn test_cs_codegen_string_interpolation() {
+    let source = r#"
+        name = "World"
+        print "Hello, {$name}!"
+    "#;
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize().unwrap();
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse().unwrap();
+    let cs = kelpyshark_compiler::codegen::cs::generate(&program);
+
+    assert!(cs.contains("KsStr(name)"));
+}
